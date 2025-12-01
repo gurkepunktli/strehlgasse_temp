@@ -213,15 +213,15 @@ function App() {
             </div>
             <div className="stat-card">
               <div className="stat-label">Durchschnitt</div>
-              <div className="stat-value">{stats.avg_temp.toFixed(1)}°C</div>
+              <div className="stat-value">{stats.avg_temp ? stats.avg_temp.toFixed(1) : '--'}°C</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Minimum</div>
-              <div className="stat-value blue">{stats.min_temp.toFixed(1)}°C</div>
+              <div className="stat-value blue">{stats.min_temp ? stats.min_temp.toFixed(1) : '--'}°C</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Maximum</div>
-              <div className="stat-value red">{stats.max_temp.toFixed(1)}°C</div>
+              <div className="stat-value red">{stats.max_temp ? stats.max_temp.toFixed(1) : '--'}°C</div>
             </div>
             {stats.avg_humidity !== null && (
               <div className="stat-card">
