@@ -190,21 +190,37 @@ function App() {
     )
   }
 
+  // Check if last reading is within 10 minutes
+  const isOnline = readings.length > 0 &&
+    (Date.now() - readings[readings.length - 1].timestamp) < 10 * 60 * 1000
+
+  // Helper classes for light/dark mode
+  const cardBg = darkMode ? 'bg-gray-800/30 border-gray-700/50' : 'bg-gray-50 border-gray-200'
+  const textPrimary = darkMode ? 'text-gray-100' : 'text-gray-900'
+  const textSecondary = darkMode ? 'text-gray-400' : 'text-gray-600'
+  const buttonBg = darkMode ? 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
       darkMode
         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
-        : 'bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800'
+        : 'bg-white'
     }`}>
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
-        <header className="backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 rounded-3xl p-6 mb-8 shadow-2xl border border-white/20 dark:border-gray-700/50">
+        <header className={`backdrop-blur-lg rounded-3xl p-6 mb-8 shadow-2xl border ${
+          darkMode
+            ? 'bg-gray-800/30 border-gray-700/50'
+            : 'bg-gray-50/80 border-gray-200'
+        }`}>
           <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
             <div className="text-center lg:text-left">
-              <h1 className="text-4xl font-bold text-white dark:text-gray-100 mb-2 flex items-center justify-center lg:justify-start gap-3">
+              <h1 className={`text-4xl font-bold mb-2 flex items-center justify-center lg:justify-start gap-3 ${
+                darkMode ? 'text-gray-100' : 'text-gray-900'
+              }`}>
                 🌡️ Strehlgasse Temperatur
               </h1>
-              <p className="text-white/90 dark:text-gray-300 text-lg">
+              <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                 Raspberry Pi Sensor • Live Monitoring
               </p>
             </div>
@@ -229,14 +245,28 @@ function App() {
 
               {/* Status & Time */}
               <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 dark:bg-green-400/20 backdrop-blur-sm border border-green-400/30">
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm border ${
+                  isOnline
+                    ? 'bg-green-500/20 dark:bg-green-400/20 border-green-400/30'
+                    : 'bg-red-500/20 dark:bg-red-400/20 border-red-400/30'
+                }`}>
                   <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    {isOnline && (
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    )}
+                    <span className={`relative inline-flex rounded-full h-3 w-3 ${
+                      isOnline ? 'bg-green-500' : 'bg-red-500'
+                    }`}></span>
                   </span>
-                  <span className="text-green-100 dark:text-green-300 font-semibold text-sm">Live</span>
+                  <span className={`font-semibold text-sm ${
+                    isOnline
+                      ? 'text-green-100 dark:text-green-300'
+                      : 'text-red-100 dark:text-red-300'
+                  }`}>
+                    {isOnline ? 'Live' : 'Offline'}
+                  </span>
                 </div>
-                <div className="text-white/80 dark:text-gray-400 text-sm">
+                <div className={darkMode ? 'text-gray-400 text-sm' : 'text-gray-600 text-sm'}>
                   {format(lastUpdate, 'HH:mm:ss')}
                 </div>
               </div>
@@ -249,13 +279,21 @@ function App() {
           {stats && (
             <>
               {/* Current Temperature - Highlighted */}
-              <div className="backdrop-blur-lg bg-gradient-to-br from-pink-500/20 to-rose-500/20 dark:from-pink-600/30 dark:to-rose-600/30 rounded-2xl p-6 shadow-2xl border-2 border-pink-400/40 dark:border-pink-500/50 hover:scale-105 transition-transform duration-200">
+              <div className={`backdrop-blur-lg bg-gradient-to-br rounded-2xl p-6 shadow-2xl border-2 hover:scale-105 transition-transform duration-200 ${
+                darkMode
+                  ? 'from-pink-600/30 to-rose-600/30 border-pink-500/50'
+                  : 'from-pink-100 to-rose-100 border-pink-300'
+              }`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-pink-100 dark:text-pink-200 mb-2 uppercase tracking-wide">
+                    <div className={`text-sm font-medium mb-2 uppercase tracking-wide ${
+                      darkMode ? 'text-pink-200' : 'text-pink-700'
+                    }`}>
                       Aktuell
                     </div>
-                    <div className="text-4xl font-bold text-white dark:text-gray-100 flex items-baseline gap-2">
+                    <div className={`text-4xl font-bold flex items-baseline gap-2 ${
+                      darkMode ? 'text-gray-100' : 'text-gray-900'
+                    }`}>
                       {readings[readings.length - 1]?.temperature.toFixed(1) || '--'}
                       <span className="text-2xl">°C</span>
                     </div>
@@ -270,13 +308,17 @@ function App() {
               </div>
 
               {/* Average */}
-              <div className="backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 rounded-2xl p-6 shadow-xl border border-white/20 dark:border-gray-700/50 hover:scale-105 transition-transform duration-200">
+              <div className={`backdrop-blur-lg rounded-2xl p-6 shadow-xl border hover:scale-105 transition-transform duration-200 ${
+                darkMode ? 'bg-gray-800/30 border-gray-700/50' : 'bg-gray-50 border-gray-200'
+              }`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-white/70 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                    <div className={`text-sm font-medium mb-2 uppercase tracking-wide ${
+                      darkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
                       Durchschnitt
                     </div>
-                    <div className="text-3xl font-bold text-white dark:text-gray-100">
+                    <div className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
                       {stats.avg_temp ? stats.avg_temp.toFixed(1) : '--'}°C
                     </div>
                   </div>
@@ -285,13 +327,13 @@ function App() {
               </div>
 
               {/* Minimum */}
-              <div className="backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 rounded-2xl p-6 shadow-xl border border-white/20 dark:border-gray-700/50 hover:scale-105 transition-transform duration-200">
+              <div className={`backdrop-blur-lg rounded-2xl p-6 shadow-xl border hover:scale-105 transition-transform duration-200 ${cardBg}`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-white/70 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                    <div className={`text-sm font-medium mb-2 uppercase tracking-wide ${textSecondary}`}>
                       Minimum
                     </div>
-                    <div className="text-3xl font-bold text-blue-300 dark:text-blue-400">
+                    <div className={`text-3xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
                       {stats.min_temp ? stats.min_temp.toFixed(1) : '--'}°C
                     </div>
                   </div>
@@ -300,13 +342,13 @@ function App() {
               </div>
 
               {/* Maximum */}
-              <div className="backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 rounded-2xl p-6 shadow-xl border border-white/20 dark:border-gray-700/50 hover:scale-105 transition-transform duration-200">
+              <div className={`backdrop-blur-lg rounded-2xl p-6 shadow-xl border hover:scale-105 transition-transform duration-200 ${cardBg}`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-white/70 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                    <div className={`text-sm font-medium mb-2 uppercase tracking-wide ${textSecondary}`}>
                       Maximum
                     </div>
-                    <div className="text-3xl font-bold text-red-300 dark:text-red-400">
+                    <div className={`text-3xl font-bold ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
                       {stats.max_temp ? stats.max_temp.toFixed(1) : '--'}°C
                     </div>
                   </div>
@@ -316,13 +358,13 @@ function App() {
 
               {/* Humidity */}
               {stats.avg_humidity !== null && stats.avg_humidity > 0 && (
-                <div className="backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 rounded-2xl p-6 shadow-xl border border-white/20 dark:border-gray-700/50 hover:scale-105 transition-transform duration-200">
+                <div className={`backdrop-blur-lg rounded-2xl p-6 shadow-xl border hover:scale-105 transition-transform duration-200 ${cardBg}`}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="text-sm font-medium text-white/70 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                      <div className={`text-sm font-medium mb-2 uppercase tracking-wide ${textSecondary}`}>
                         Luftfeuchtigkeit
                       </div>
-                      <div className="text-3xl font-bold text-white dark:text-gray-100">
+                      <div className={`text-3xl font-bold ${textPrimary}`}>
                         {stats.avg_humidity.toFixed(1)}%
                       </div>
                     </div>
@@ -336,9 +378,9 @@ function App() {
 
         {/* Time Range Selector */}
         <div className="flex justify-center mb-8">
-          <div className="backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 rounded-2xl p-4 shadow-xl border border-white/20 dark:border-gray-700/50">
+          <div className={`backdrop-blur-lg rounded-2xl p-4 shadow-xl border ${cardBg}`}>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-white/90 dark:text-gray-300 font-semibold text-lg mr-2">📅 Zeitraum:</span>
+              <span className={`font-semibold text-lg mr-2 ${textPrimary}`}>📅 Zeitraum:</span>
               {[
                 { label: '1h', value: 1 },
                 { label: '6h', value: 6 },
@@ -351,7 +393,7 @@ function App() {
                   className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-200 ${
                     timeRange === value
                       ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg scale-105'
-                      : 'bg-white/20 dark:bg-gray-700/50 text-white/80 dark:text-gray-300 hover:bg-white/30 dark:hover:bg-gray-600/50'
+                      : buttonBg
                   }`}
                 >
                   {label}
@@ -362,15 +404,15 @@ function App() {
         </div>
 
         {/* Chart */}
-        <div className="backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 rounded-2xl p-8 shadow-2xl border border-white/20 dark:border-gray-700/50 mb-8">
+        <div className={`backdrop-blur-lg rounded-2xl p-8 shadow-2xl border mb-8 ${cardBg}`}>
           <div className="h-96 lg:h-[500px]">
             <Line data={chartData} options={chartOptions} />
           </div>
         </div>
 
         {/* Footer */}
-        <footer className="backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 rounded-2xl p-6 shadow-xl border border-white/20 dark:border-gray-700/50">
-          <div className="flex flex-wrap justify-center items-center gap-8 text-white/90 dark:text-gray-300">
+        <footer className={`backdrop-blur-lg rounded-2xl p-6 shadow-xl border ${cardBg}`}>
+          <div className={`flex flex-wrap justify-center items-center gap-8 ${textPrimary}`}>
             <div className="flex items-center gap-2">
               <span className="text-2xl">📈</span>
               <span className="font-medium">{stats?.count || 0} Messwerte</span>
