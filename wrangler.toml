@@ -1,3 +1,4 @@
+# Worker Configuration (for API deployment)
 name = "temperature-api"
 main = "worker/index.ts"
 compatibility_date = "2024-01-01"
@@ -6,12 +7,3 @@ compatibility_date = "2024-01-01"
 binding = "DB"
 database_name = "temperature-db"
 database_id = "5e368aa4-37de-4597-852d-5458915184a8"
-
-[env.production]
-[[env.production.d1_databases]]
-binding = "DB"
-database_name = "temperature-db"
-database_id = "5e368aa4-37de-4597-852d-5458915184a8"
-
-# Pages Configuration
-pages_build_output_dir = "dist"
