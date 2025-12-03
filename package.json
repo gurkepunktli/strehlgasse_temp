@@ -1,6 +1,7 @@
 {
   "name": "temperature-dashboard",
   "version": "1.0.0",
+  "type": "module",
   "description": "Temperature monitoring dashboard with Cloudflare Pages and Workers",
   "scripts": {
     "dev": "vite",
