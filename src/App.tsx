@@ -48,7 +48,6 @@ function App() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState(24)
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [progress, setProgress] = useState(0)
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode')
@@ -76,7 +75,6 @@ function App() {
 
       setReadings(readingsData.data.reverse())
       setStats(statsData.data)
-      setLastUpdate(new Date())
       setProgress(0)
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -260,7 +258,9 @@ function App() {
                   Letztes Update
                 </div>
                 <div className={`text-sm font-medium ${textPrimary}`}>
-                  {format(lastUpdate, 'dd.MM.yyyy HH:mm:ss')}
+                  {readings.length > 0
+                    ? format(new Date(readings[readings.length - 1].timestamp), 'dd.MM.yyyy HH:mm:ss')
+                    : '--'}
                 </div>
               </div>
 
