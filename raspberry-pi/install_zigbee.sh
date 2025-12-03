@@ -46,12 +46,28 @@ if ! command -v zigbee2mqtt &> /dev/null; then
         sudo apt-get install -y nodejs
 
         # Zigbee2MQTT installieren
-        echo "Klone Zigbee2MQTT Repository..."
-        sudo mkdir -p /opt/zigbee2mqtt
-        sudo chown -R ${USER}: /opt/zigbee2mqtt
-        git clone --depth 1 https://github.com/Koenkk/zigbee2mqtt.git /opt/zigbee2mqtt
-        cd /opt/zigbee2mqtt
-        npm install
+        if [ -d "/opt/zigbee2mqtt/.git" ]; then
+            echo "Zigbee2MQTT Repository bereits vorhanden, aktualisiere..."
+            cd /opt/zigbee2mqtt
+            sudo chown -R ${USER}: /opt/zigbee2mqtt
+            git pull
+            npm install
+        else
+            echo "Klone Zigbee2MQTT Repository..."
+            sudo mkdir -p /opt/zigbee2mqtt
+            sudo chown -R ${USER}: /opt/zigbee2mqtt
+
+            if [ "$(ls -A /opt/zigbee2mqtt 2>/dev/null)" ]; then
+                echo -e "${YELLOW}⚠ /opt/zigbee2mqtt ist nicht leer${NC}"
+                echo -e "${YELLOW}Lösche alten Inhalt...${NC}"
+                sudo rm -rf /opt/zigbee2mqtt/*
+                sudo rm -rf /opt/zigbee2mqtt/.*  2>/dev/null || true
+            fi
+
+            git clone --depth 1 https://github.com/Koenkk/zigbee2mqtt.git /opt/zigbee2mqtt
+            cd /opt/zigbee2mqtt
+            npm install
+        fi
 
         echo ""
         echo -e "${YELLOW}USB Zigbee-Stick Pfad eingeben:${NC}"
