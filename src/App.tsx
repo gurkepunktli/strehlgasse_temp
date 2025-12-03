@@ -254,6 +254,16 @@ function App() {
             </div>
 
             <div className="flex items-center gap-4">
+              {/* Last Update */}
+              <div className="flex flex-col items-end">
+                <div className={`text-xs uppercase tracking-wide ${textSecondary}`}>
+                  Letztes Update
+                </div>
+                <div className={`text-sm font-medium ${textPrimary}`}>
+                  {format(lastUpdate, 'dd.MM.yyyy HH:mm:ss')}
+                </div>
+              </div>
+
               {/* Refresh Progress Ring */}
               <div className="relative w-12 h-12">
                 <svg className="w-12 h-12 transform -rotate-90">
@@ -303,32 +313,27 @@ function App() {
                 )}
               </button>
 
-              {/* Status & Time */}
-              <div className="flex flex-col items-end gap-2">
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm border ${
+              {/* Status */}
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm border ${
+                isOnline
+                  ? 'bg-green-500/20 dark:bg-green-400/20 border-green-400/30'
+                  : 'bg-red-500/20 dark:bg-red-400/20 border-red-400/30'
+              }`}>
+                <span className="relative flex h-3 w-3">
+                  {isOnline && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  )}
+                  <span className={`relative inline-flex rounded-full h-3 w-3 ${
+                    isOnline ? 'bg-green-500' : 'bg-red-500'
+                  }`}></span>
+                </span>
+                <span className={`font-semibold text-sm ${
                   isOnline
-                    ? 'bg-green-500/20 dark:bg-green-400/20 border-green-400/30'
-                    : 'bg-red-500/20 dark:bg-red-400/20 border-red-400/30'
+                    ? 'text-green-100 dark:text-green-300'
+                    : 'text-red-100 dark:text-red-300'
                 }`}>
-                  <span className="relative flex h-3 w-3">
-                    {isOnline && (
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    )}
-                    <span className={`relative inline-flex rounded-full h-3 w-3 ${
-                      isOnline ? 'bg-green-500' : 'bg-red-500'
-                    }`}></span>
-                  </span>
-                  <span className={`font-semibold text-sm ${
-                    isOnline
-                      ? 'text-green-100 dark:text-green-300'
-                      : 'text-red-100 dark:text-red-300'
-                  }`}>
-                    {isOnline ? 'Live' : 'Offline'}
-                  </span>
-                </div>
-                <div className={darkMode ? 'text-gray-400 text-sm' : 'text-gray-600 text-sm'}>
-                  {format(lastUpdate, 'HH:mm:ss')}
-                </div>
+                  {isOnline ? 'Live' : 'Offline'}
+                </span>
               </div>
             </div>
           </div>
