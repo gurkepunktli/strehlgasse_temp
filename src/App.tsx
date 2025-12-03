@@ -244,7 +244,7 @@ function App() {
               <h1 className={`text-4xl font-bold mb-2 flex items-center justify-center lg:justify-start gap-3 ${
                 darkMode ? 'text-gray-100' : 'text-gray-900'
               }`}>
-                🌡️ Strehlgasse Temperatur
+                🌡️ Temperatur Aussenzelt
               </h1>
               <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                 Raspberry Pi Sensor • Live Monitoring
