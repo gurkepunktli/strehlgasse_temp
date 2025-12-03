@@ -70,8 +70,8 @@ function App() {
         fetch(`${API_URL}/api/temperature/stats?hours=${timeRange}`)
       ])
 
-      const readingsData = await readingsRes.json()
-      const statsData = await statsRes.json()
+      const readingsData: any = await readingsRes.json()
+      const statsData: any = await statsRes.json()
 
       setReadings(readingsData.data.reverse())
       setStats(statsData.data)
@@ -312,8 +312,13 @@ function App() {
                       {readings[readings.length - 1]?.temperature.toFixed(1) || '--'}
                       <span className="text-2xl">°C</span>
                     </div>
+                    {readings.length > 0 && (
+                      <div className={`text-xs mt-1 ${textSecondary}`}>
+                        {format(new Date(readings[readings.length - 1].timestamp), 'dd.MM.yyyy HH:mm')}
+                      </div>
+                    )}
                     {readings.length > 1 && (
-                      <div className="mt-2 text-2xl">
+                      <div className="mt-1 text-2xl">
                         {readings[readings.length - 1]?.temperature > readings[readings.length - 2]?.temperature ? '↑' : '↓'}
                       </div>
                     )}
@@ -343,10 +348,15 @@ function App() {
                         : '--'}
                       <span className="text-2xl">%</span>
                     </div>
+                    {readings.length > 0 && (
+                      <div className={`text-xs mt-1 ${textSecondary}`}>
+                        {format(new Date(readings[readings.length - 1].timestamp), 'dd.MM.yyyy HH:mm')}
+                      </div>
+                    )}
                     {readings.length > 1 &&
                      readings[readings.length - 1]?.humidity !== null &&
                      readings[readings.length - 2]?.humidity !== null && (
-                      <div className="mt-2 text-2xl">
+                      <div className="mt-1 text-2xl">
                         {readings[readings.length - 1].humidity! > readings[readings.length - 2].humidity! ? '↑' : '↓'}
                       </div>
                     )}
