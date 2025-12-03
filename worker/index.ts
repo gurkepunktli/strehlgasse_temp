@@ -36,7 +36,8 @@ export default {
         }
 
         const timestamp = data.timestamp || Date.now();
-        const location = data.location || 'default';
+        // Default to primary location if none provided to keep dashboard in sync
+        const location = data.location || 'strehlgasse';
 
         await env.DB.prepare(
           'INSERT INTO temperature_readings (temperature, humidity, location, timestamp) VALUES (?, ?, ?, ?)'
@@ -53,16 +54,23 @@ export default {
       // GET /api/temperature - Get temperature readings
       if (url.pathname === '/api/temperature' && request.method === 'GET') {
         const hours = parseInt(url.searchParams.get('hours') || '24');
-        const location = url.searchParams.get('location') || 'default';
+        const location = url.searchParams.get('location');
         const limit = parseInt(url.searchParams.get('limit') || '1000');
 
         const timeThreshold = Date.now() - (hours * 60 * 60 * 1000);
 
-        const { results } = await env.DB.prepare(
-          'SELECT * FROM temperature_readings WHERE location = ? AND timestamp >= ? ORDER BY timestamp DESC LIMIT ?'
-        )
-          .bind(location, timeThreshold, limit)
-          .all();
+        let readingsQuery;
+        if (location) {
+          readingsQuery = env.DB.prepare(
+            'SELECT * FROM temperature_readings WHERE location = ? AND timestamp >= ? ORDER BY timestamp DESC LIMIT ?'
+          ).bind(location, timeThreshold, limit);
+        } else {
+          readingsQuery = env.DB.prepare(
+            'SELECT * FROM temperature_readings WHERE timestamp >= ? ORDER BY timestamp DESC LIMIT ?'
+          ).bind(timeThreshold, limit);
+        }
+
+        const { results } = await readingsQuery.all();
 
         return new Response(JSON.stringify({ data: results }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -71,13 +79,17 @@ export default {
 
       // GET /api/temperature/latest - Get latest reading
       if (url.pathname === '/api/temperature/latest' && request.method === 'GET') {
-        const location = url.searchParams.get('location') || 'default';
+        const location = url.searchParams.get('location');
 
-        const result = await env.DB.prepare(
-          'SELECT * FROM temperature_readings WHERE location = ? ORDER BY timestamp DESC LIMIT 1'
-        )
-          .bind(location)
-          .first();
+        const latestQuery = location
+          ? env.DB.prepare(
+            'SELECT * FROM temperature_readings WHERE location = ? ORDER BY timestamp DESC LIMIT 1'
+          ).bind(location)
+          : env.DB.prepare(
+            'SELECT * FROM temperature_readings ORDER BY timestamp DESC LIMIT 1'
+          );
+
+        const result = await latestQuery.first();
 
         return new Response(JSON.stringify({ data: result }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -87,21 +99,32 @@ export default {
       // GET /api/temperature/stats - Get statistics
       if (url.pathname === '/api/temperature/stats' && request.method === 'GET') {
         const hours = parseInt(url.searchParams.get('hours') || '24');
-        const location = url.searchParams.get('location') || 'default';
+        const location = url.searchParams.get('location');
         const timeThreshold = Date.now() - (hours * 60 * 60 * 1000);
 
-        const result = await env.DB.prepare(
-          `SELECT
-            AVG(temperature) as avg_temp,
-            MIN(temperature) as min_temp,
-            MAX(temperature) as max_temp,
-            AVG(humidity) as avg_humidity,
-            COUNT(*) as count
-          FROM temperature_readings
-          WHERE location = ? AND timestamp >= ?`
-        )
-          .bind(location, timeThreshold)
-          .first();
+        const statsQuery = location
+          ? env.DB.prepare(
+            `SELECT
+              AVG(temperature) as avg_temp,
+              MIN(temperature) as min_temp,
+              MAX(temperature) as max_temp,
+              AVG(humidity) as avg_humidity,
+              COUNT(*) as count
+            FROM temperature_readings
+            WHERE location = ? AND timestamp >= ?`
+          ).bind(location, timeThreshold)
+          : env.DB.prepare(
+            `SELECT
+              AVG(temperature) as avg_temp,
+              MIN(temperature) as min_temp,
+              MAX(temperature) as max_temp,
+              AVG(humidity) as avg_humidity,
+              COUNT(*) as count
+            FROM temperature_readings
+            WHERE timestamp >= ?`
+          ).bind(timeThreshold);
+
+        const result = await statsQuery.first();
 
         return new Response(JSON.stringify({ data: result }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
