@@ -308,35 +308,37 @@ function App() {
               </div>
 
               {/* Current Humidity - Highlighted */}
-              {readings.length > 0 && readings[readings.length - 1]?.humidity !== null && (
-                <div className={`backdrop-blur-lg bg-gradient-to-br rounded-2xl p-6 shadow-2xl border-2 hover:scale-105 transition-transform duration-200 ${
-                  darkMode
-                    ? 'from-blue-600/30 to-cyan-600/30 border-blue-500/50'
-                    : 'from-blue-100 to-cyan-100 border-blue-300'
-                }`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className={`text-sm font-medium mb-2 uppercase tracking-wide ${
-                        darkMode ? 'text-blue-200' : 'text-blue-700'
-                      }`}>
-                        Luftfeuchtigkeit
-                      </div>
-                      <div className={`text-4xl font-bold flex items-baseline gap-2 ${
-                        darkMode ? 'text-gray-100' : 'text-gray-900'
-                      }`}>
-                        {readings[readings.length - 1]?.humidity?.toFixed(1) || '--'}
-                        <span className="text-2xl">%</span>
-                      </div>
-                      {readings.length > 1 && readings[readings.length - 2]?.humidity !== null && (
-                        <div className="mt-2 text-2xl">
-                          {readings[readings.length - 1]?.humidity! > readings[readings.length - 2]?.humidity! ? '↑' : '↓'}
-                        </div>
-                      )}
+              <div className={`backdrop-blur-lg bg-gradient-to-br rounded-2xl p-6 shadow-2xl border-2 hover:scale-105 transition-transform duration-200 ${
+                darkMode
+                  ? 'from-blue-600/30 to-cyan-600/30 border-blue-500/50'
+                  : 'from-blue-100 to-cyan-100 border-blue-300'
+              }`}>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className={`text-sm font-medium mb-2 uppercase tracking-wide ${
+                      darkMode ? 'text-blue-200' : 'text-blue-700'
+                    }`}>
+                      Luftfeuchtigkeit
                     </div>
-                    <div className="text-4xl">💧</div>
+                    <div className={`text-4xl font-bold flex items-baseline gap-2 ${
+                      darkMode ? 'text-gray-100' : 'text-gray-900'
+                    }`}>
+                      {(readings.length > 0 && readings[readings.length - 1]?.humidity !== null && readings[readings.length - 1]?.humidity !== undefined)
+                        ? readings[readings.length - 1].humidity!.toFixed(1)
+                        : '--'}
+                      <span className="text-2xl">%</span>
+                    </div>
+                    {readings.length > 1 &&
+                     readings[readings.length - 1]?.humidity !== null &&
+                     readings[readings.length - 2]?.humidity !== null && (
+                      <div className="mt-2 text-2xl">
+                        {readings[readings.length - 1].humidity! > readings[readings.length - 2].humidity! ? '↑' : '↓'}
+                      </div>
+                    )}
                   </div>
+                  <div className="text-4xl">💧</div>
                 </div>
-              )}
+              </div>
 
               {/* Average */}
               <div className={`backdrop-blur-lg rounded-2xl p-6 shadow-xl border hover:scale-105 transition-transform duration-200 ${cardBg}`}>
