@@ -45,6 +45,10 @@ if ! command -v zigbee2mqtt &> /dev/null; then
         curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
         sudo apt-get install -y nodejs
 
+        # pnpm installieren (wird von Zigbee2MQTT benötigt)
+        echo "Installiere pnpm..."
+        sudo npm install -g pnpm
+
         # Zigbee2MQTT installieren
         if [ -d "/opt/zigbee2mqtt/.git" ]; then
             echo "Zigbee2MQTT Repository bereits vorhanden, aktualisiere..."
