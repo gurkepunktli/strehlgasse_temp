@@ -71,6 +71,19 @@ if ! command -v zigbee2mqtt &> /dev/null; then
 
         echo ""
         echo -e "${YELLOW}USB Zigbee-Stick Pfad eingeben:${NC}"
+        echo -e "${BLUE}Verfügbare USB-Serial Geräte:${NC}"
+
+        # Liste alle USB-Serial Geräte auf
+        if ls /dev/ttyACM* /dev/ttyUSB* 2>/dev/null | head -5; then
+            echo ""
+        else
+            echo -e "${RED}⚠ Keine USB-Serial Geräte gefunden!${NC}"
+            echo "Bitte Zigbee-Stick anschließen und Enter drücken..."
+            read
+            ls /dev/ttyACM* /dev/ttyUSB* 2>/dev/null | head -5 || echo "Immer noch keine Geräte gefunden"
+            echo ""
+        fi
+
         echo "Standard: /dev/ttyACM0 (oder /dev/ttyUSB0)"
         read -p "USB Port [/dev/ttyACM0]: " usb_port
         usb_port=${usb_port:-/dev/ttyACM0}
@@ -156,8 +169,27 @@ echo "Kopiere Dateien..."
 # Hier würden die Dateien vom Repo geklont
 
 echo ""
-echo -e "${GREEN}3. Python Dependencies installieren...${NC}"
-pip3 install -r requirements.txt
+echo -e "${GREEN}3. Python Virtual Environment einrichten...${NC}"
+
+# Installiere python3-venv falls nicht vorhanden
+if ! dpkg -l | grep -q python3-venv; then
+    echo "Installiere python3-venv..."
+    sudo apt-get install -y python3-venv python3-full
+fi
+
+# Erstelle Virtual Environment
+if [ ! -d "$INSTALL_DIR/venv" ]; then
+    echo "Erstelle Virtual Environment..."
+    python3 -m venv "$INSTALL_DIR/venv"
+else
+    echo "Virtual Environment bereits vorhanden"
+fi
+
+# Aktiviere Virtual Environment und installiere Dependencies
+echo "Installiere Python Dependencies..."
+source "$INSTALL_DIR/venv/bin/activate"
+pip install --upgrade pip
+pip install -r requirements.txt || pip install paho-mqtt requests
 
 echo ""
 echo -e "${BLUE}4. Konfiguration...${NC}"
@@ -193,7 +225,7 @@ sed -i 's/^API_URL = .*/from config import */' "$INSTALL_DIR/zigbee_temp_monitor
 echo ""
 echo -e "${GREEN}5. Teste Monitor...${NC}"
 echo "Starte Test (30 Sekunden)..."
-timeout 30 python3 zigbee_temp_monitor.py || true
+timeout 30 "$INSTALL_DIR/venv/bin/python3" zigbee_temp_monitor.py || true
 
 echo ""
 read -p "Als Service einrichten? (j/N): " install_service
@@ -211,7 +243,7 @@ Wants=zigbee2mqtt.service mosquitto.service
 Type=simple
 User=$USER
 WorkingDirectory=$INSTALL_DIR
-ExecStart=/usr/bin/python3 $INSTALL_DIR/zigbee_temp_monitor.py
+ExecStart=$INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/zigbee_temp_monitor.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -244,7 +276,7 @@ echo "  Monitor Logs:       sudo journalctl -u zigbee-temp-monitor -f"
 echo "  Zigbee2MQTT Status: sudo systemctl status zigbee2mqtt"
 echo "  Zigbee2MQTT Logs:   sudo journalctl -u zigbee2mqtt -f"
 echo "  MQTT abonnieren:    mosquitto_sub -t 'zigbee2mqtt/#' -v"
-echo "  Test:               python3 $INSTALL_DIR/zigbee_temp_monitor.py"
+echo "  Test:               $INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/zigbee_temp_monitor.py"
 echo ""
 echo -e "${YELLOW}Nächste Schritte:${NC}"
 echo "1. Öffne Zigbee2MQTT Frontend und paare deinen Sensor"
