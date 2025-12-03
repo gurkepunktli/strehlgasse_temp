@@ -11,4 +11,7 @@ database_id = "5e368aa4-37de-4597-852d-5458915184a8"
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "temperature-db"
-database_id = "your-database-id-here"
+database_id = "5e368aa4-37de-4597-852d-5458915184a8"
+
+# Pages Configuration
+pages_build_output_dir = "dist"
