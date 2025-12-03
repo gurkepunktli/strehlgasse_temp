@@ -51,7 +51,7 @@ if ! command -v zigbee2mqtt &> /dev/null; then
         sudo chown -R ${USER}: /opt/zigbee2mqtt
         git clone --depth 1 https://github.com/Koenkk/zigbee2mqtt.git /opt/zigbee2mqtt
         cd /opt/zigbee2mqtt
-        npm ci
+        npm install
 
         echo ""
         echo -e "${YELLOW}USB Zigbee-Stick Pfad eingeben:${NC}"
