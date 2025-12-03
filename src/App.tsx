@@ -90,7 +90,12 @@ function App() {
   }, [timeRange])
 
   const chartData = {
-    labels: readings.map(r => format(new Date(r.timestamp), 'HH:mm')),
+    labels: readings.map(r => {
+      const date = new Date(r.timestamp)
+      return timeRange > 24
+        ? format(date, 'dd.MM HH:mm')
+        : format(date, 'HH:mm')
+    }),
     datasets: [
       {
         label: 'Temperatur (°C)',
@@ -193,6 +198,16 @@ function App() {
   // Check if last reading is within 10 minutes
   const isOnline = readings.length > 0 &&
     (Date.now() - readings[readings.length - 1].timestamp) < 10 * 60 * 1000
+
+  // Find min/max with timestamps
+  const minReading = readings.reduce((min, r) =>
+    r.temperature < min.temperature ? r : min,
+    readings[0] || { temperature: Infinity, timestamp: 0 }
+  )
+  const maxReading = readings.reduce((max, r) =>
+    r.temperature > max.temperature ? r : max,
+    readings[0] || { temperature: -Infinity, timestamp: 0 }
+  )
 
   // Helper classes for light/dark mode
   const cardBg = darkMode ? 'bg-gray-800/30 border-gray-700/50' : 'bg-gray-50 border-gray-200'
@@ -363,8 +378,13 @@ function App() {
                       Minimum
                     </div>
                     <div className={`text-3xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                      {stats.min_temp ? stats.min_temp.toFixed(1) : '--'}°C
+                      {minReading && minReading.temperature !== Infinity ? minReading.temperature.toFixed(1) : '--'}°C
                     </div>
+                    {minReading && minReading.temperature !== Infinity && (
+                      <div className={`text-xs mt-1 ${textSecondary}`}>
+                        {format(new Date(minReading.timestamp), 'dd.MM.yyyy HH:mm')}
+                      </div>
+                    )}
                   </div>
                   <div className="text-4xl">❄️</div>
                 </div>
@@ -378,8 +398,13 @@ function App() {
                       Maximum
                     </div>
                     <div className={`text-3xl font-bold ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
-                      {stats.max_temp ? stats.max_temp.toFixed(1) : '--'}°C
+                      {maxReading && maxReading.temperature !== -Infinity ? maxReading.temperature.toFixed(1) : '--'}°C
                     </div>
+                    {maxReading && maxReading.temperature !== -Infinity && (
+                      <div className={`text-xs mt-1 ${textSecondary}`}>
+                        {format(new Date(maxReading.timestamp), 'dd.MM.yyyy HH:mm')}
+                      </div>
+                    )}
                   </div>
                   <div className="text-4xl">🔥</div>
                 </div>
