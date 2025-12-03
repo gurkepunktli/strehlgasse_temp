@@ -76,14 +76,14 @@ advanced:
 EOF
 
         # Systemd Service erstellen
-        sudo tee /etc/systemd/system/zigbee2mqtt.service > /dev/null << 'EOF'
+        sudo tee /etc/systemd/system/zigbee2mqtt.service > /dev/null << EOF
 [Unit]
 Description=zigbee2mqtt
 After=network.target mosquitto.service
 
 [Service]
 Type=simple
-User=pi
+User=$USER
 WorkingDirectory=/opt/zigbee2mqtt
 ExecStart=/usr/bin/npm start
 Restart=always
@@ -99,6 +99,30 @@ EOF
         sudo systemctl enable zigbee2mqtt
         sudo systemctl start zigbee2mqtt
 
+        echo ""
+        echo -e "${GREEN}✓ Zigbee2MQTT Service erstellt und gestartet${NC}"
+        sleep 3
+
+        # Prüfe Service Status
+        if sudo systemctl is-active --quiet zigbee2mqtt; then
+            echo -e "${GREEN}✓ Zigbee2MQTT läuft erfolgreich${NC}"
+        else
+            echo -e "${RED}⚠ Zigbee2MQTT konnte nicht gestartet werden${NC}"
+            echo "Prüfe die Logs mit: sudo journalctl -u zigbee2mqtt -n 50"
+        fi
+
+        # USB Port Permissions sicherstellen
+        echo ""
+        echo -e "${BLUE}Füge Benutzer zur dialout Gruppe hinzu (für USB-Zugriff)...${NC}"
+        if ! groups $USER | grep -q dialout; then
+            sudo usermod -a -G dialout $USER
+            echo -e "${YELLOW}⚠ Neustart erforderlich damit Gruppen-Änderungen wirksam werden${NC}"
+            echo -e "${YELLOW}Führe 'sudo reboot' aus nach dem Setup${NC}"
+        else
+            echo -e "${GREEN}✓ Benutzer bereits in dialout Gruppe${NC}"
+        fi
+
+        echo ""
         echo -e "${GREEN}✓ Zigbee2MQTT installiert${NC}"
         echo -e "${YELLOW}Frontend verfügbar unter: http://$(hostname -I | cut -d' ' -f1):8080${NC}"
     fi
