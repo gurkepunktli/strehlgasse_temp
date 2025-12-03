@@ -24,7 +24,8 @@ ChartJS.register(
   Filler
 )
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787'
+// Fallback to deployed worker to avoid localhost calls in production
+const API_URL = import.meta.env.VITE_API_URL || 'https://temperature-api.dyntech.workers.dev'
 
 interface TemperatureReading {
   id: number
@@ -65,9 +66,10 @@ function App() {
 
   const fetchData = async () => {
     try {
+      const locationParam = 'location=strehlgasse'
       const [readingsRes, statsRes] = await Promise.all([
-        fetch(`${API_URL}/api/temperature?hours=${timeRange}&limit=500`),
-        fetch(`${API_URL}/api/temperature/stats?hours=${timeRange}`)
+        fetch(`${API_URL}/api/temperature?hours=${timeRange}&limit=500&${locationParam}`),
+        fetch(`${API_URL}/api/temperature/stats?hours=${timeRange}&${locationParam}`)
       ])
 
       const readingsData: any = await readingsRes.json()
@@ -263,6 +265,24 @@ function App() {
                     : '--'}
                 </div>
               </div>
+
+              {/* Manual Refresh Button */}
+              <button
+                onClick={() => {
+                  setProgress(0)
+                  fetchData()
+                }}
+                className={`p-3 rounded-xl transition-all duration-200 backdrop-blur-sm border ${
+                  darkMode
+                    ? 'bg-blue-600/20 hover:bg-blue-600/30 border-blue-500/50 text-blue-300'
+                    : 'bg-blue-100 hover:bg-blue-200 border-blue-300 text-blue-700'
+                }`}
+                title="Daten jetzt aktualisieren"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
 
               {/* Refresh Progress Ring */}
               <div className="relative w-12 h-12">
