@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "worker:dev": "wrangler dev worker/index.ts",
-    "worker:deploy": "wrangler deploy worker/index.ts",
+    "worker:dev": "wrangler dev worker/index.ts --config wrangler.worker.toml",
+    "worker:deploy": "wrangler deploy --config wrangler.worker.toml",
     "deploy": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {
