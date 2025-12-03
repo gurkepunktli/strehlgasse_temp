@@ -49,6 +49,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState(24)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [progress, setProgress] = useState(0)
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode')
     return saved ? JSON.parse(saved) : true
@@ -76,6 +77,7 @@ function App() {
       setReadings(readingsData.data.reverse())
       setStats(statsData.data)
       setLastUpdate(new Date())
+      setProgress(0)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -88,6 +90,17 @@ function App() {
     const interval = setInterval(fetchData, 30000)
     return () => clearInterval(interval)
   }, [timeRange])
+
+  // Progress animation (30 seconds)
+  useEffect(() => {
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        const next = prev + (100 / 30)
+        return next >= 100 ? 0 : next
+      })
+    }, 1000)
+    return () => clearInterval(progressInterval)
+  }, [])
 
   const chartData = {
     labels: readings.map(r => {
@@ -241,6 +254,38 @@ function App() {
             </div>
 
             <div className="flex items-center gap-4">
+              {/* Refresh Progress Ring */}
+              <div className="relative w-12 h-12">
+                <svg className="w-12 h-12 transform -rotate-90">
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="20"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    fill="none"
+                    className={darkMode ? 'text-gray-700' : 'text-gray-300'}
+                  />
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="20"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    fill="none"
+                    strokeDasharray={`${2 * Math.PI * 20}`}
+                    strokeDashoffset={`${2 * Math.PI * 20 * (1 - progress / 100)}`}
+                    className={darkMode ? 'text-blue-400' : 'text-blue-600'}
+                    style={{ transition: 'stroke-dashoffset 1s linear' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" className={darkMode ? 'text-gray-300' : 'text-gray-600'} />
+                  </svg>
+                </div>
+              </div>
+
               {/* Dark Mode Toggle */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
