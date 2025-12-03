@@ -1,0 +1,16 @@
+[Unit]
+Description=Temperature Sensor Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/temperature-sensor
+ExecStart=/usr/bin/python3 /home/pi/temperature-sensor/temp_sensor.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

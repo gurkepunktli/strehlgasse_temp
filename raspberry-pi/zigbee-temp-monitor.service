@@ -1,0 +1,17 @@
+[Unit]
+Description=Zigbee Temperature Monitor Service
+After=network.target zigbee2mqtt.service mosquitto.service
+Wants=zigbee2mqtt.service mosquitto.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/temperature-sensor
+ExecStart=/usr/bin/python3 /home/pi/temperature-sensor/zigbee_temp_monitor.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

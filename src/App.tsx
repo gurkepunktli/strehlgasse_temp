@@ -49,8 +49,7 @@ function App() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState(24)
-  const [newTemp, setNewTemp] = useState('')
-  const [newHumidity, setNewHumidity] = useState('')
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
   const fetchData = async () => {
     try {
@@ -64,6 +63,7 @@ function App() {
 
       setReadings(readingsData.data.reverse())
       setStats(statsData.data)
+      setLastUpdate(new Date())
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -73,34 +73,9 @@ function App() {
 
   useEffect(() => {
     fetchData()
-    const interval = setInterval(fetchData, 30000) // Refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000)
     return () => clearInterval(interval)
   }, [timeRange])
-
-  const handleAddReading = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    const temperature = parseFloat(newTemp)
-    const humidity = newHumidity ? parseFloat(newHumidity) : undefined
-
-    if (isNaN(temperature)) return
-
-    try {
-      const response = await fetch(`${API_URL}/api/temperature`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ temperature, humidity }),
-      })
-
-      if (response.ok) {
-        setNewTemp('')
-        setNewHumidity('')
-        fetchData()
-      }
-    } catch (error) {
-      console.error('Error adding reading:', error)
-    }
-  }
 
   const chartData = {
     labels: readings.map(r => format(new Date(r.timestamp), 'HH:mm')),
@@ -198,35 +173,68 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>🌡️ Temperature Dashboard</h1>
-        <p>Echtzeit-Temperaturüberwachung</p>
+        <div className="header-content">
+          <div className="header-left">
+            <h1>🌡️ Strehlgasse Temperatur</h1>
+            <p>Raspberry Pi Sensor • Live Monitoring</p>
+          </div>
+          <div className="header-right">
+            <div className="status-indicator">
+              <span className="status-dot"></span>
+              <span>Live</span>
+            </div>
+            <div className="last-update">
+              Aktualisiert: {format(lastUpdate, 'HH:mm:ss')}
+            </div>
+          </div>
+        </div>
       </header>
 
       <div className="stats-grid">
         {stats && (
           <>
-            <div className="stat-card">
-              <div className="stat-label">Aktuell</div>
-              <div className="stat-value">
-                {readings[readings.length - 1]?.temperature.toFixed(1) || '--'}°C
+            <div className="stat-card highlight">
+              <div className="stat-icon">🌡️</div>
+              <div className="stat-content">
+                <div className="stat-label">Aktuelle Temperatur</div>
+                <div className="stat-value">
+                  {readings[readings.length - 1]?.temperature.toFixed(1) || '--'}°C
+                </div>
+                {readings.length > 1 && (
+                  <div className="stat-trend">
+                    {readings[readings.length - 1]?.temperature > readings[readings.length - 2]?.temperature ? '↑' : '↓'}
+                  </div>
+                )}
               </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Durchschnitt</div>
-              <div className="stat-value">{stats.avg_temp ? stats.avg_temp.toFixed(1) : '--'}°C</div>
+              <div className="stat-icon">📊</div>
+              <div className="stat-content">
+                <div className="stat-label">Durchschnitt</div>
+                <div className="stat-value">{stats.avg_temp ? stats.avg_temp.toFixed(1) : '--'}°C</div>
+              </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Minimum</div>
-              <div className="stat-value blue">{stats.min_temp ? stats.min_temp.toFixed(1) : '--'}°C</div>
+              <div className="stat-icon">❄️</div>
+              <div className="stat-content">
+                <div className="stat-label">Minimum</div>
+                <div className="stat-value blue">{stats.min_temp ? stats.min_temp.toFixed(1) : '--'}°C</div>
+              </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Maximum</div>
-              <div className="stat-value red">{stats.max_temp ? stats.max_temp.toFixed(1) : '--'}°C</div>
+              <div className="stat-icon">🔥</div>
+              <div className="stat-content">
+                <div className="stat-label">Maximum</div>
+                <div className="stat-value red">{stats.max_temp ? stats.max_temp.toFixed(1) : '--'}°C</div>
+              </div>
             </div>
-            {stats.avg_humidity !== null && (
+            {stats.avg_humidity !== null && stats.avg_humidity > 0 && (
               <div className="stat-card">
-                <div className="stat-label">Ø Luftfeuchtigkeit</div>
-                <div className="stat-value">{stats.avg_humidity.toFixed(1)}%</div>
+                <div className="stat-icon">💧</div>
+                <div className="stat-content">
+                  <div className="stat-label">Luftfeuchtigkeit</div>
+                  <div className="stat-value">{stats.avg_humidity.toFixed(1)}%</div>
+                </div>
               </div>
             )}
           </>
@@ -234,34 +242,35 @@ function App() {
       </div>
 
       <div className="controls">
-        <div className="time-range">
-          <label>Zeitraum:</label>
-          <select value={timeRange} onChange={(e) => setTimeRange(Number(e.target.value))}>
-            <option value={1}>Letzte Stunde</option>
-            <option value={6}>Letzte 6 Stunden</option>
-            <option value={24}>Letzte 24 Stunden</option>
-            <option value={168}>Letzte Woche</option>
-          </select>
+        <div className="time-range-selector">
+          <label>📅 Zeitraum:</label>
+          <div className="time-range-buttons">
+            <button
+              className={timeRange === 1 ? 'active' : ''}
+              onClick={() => setTimeRange(1)}
+            >
+              1h
+            </button>
+            <button
+              className={timeRange === 6 ? 'active' : ''}
+              onClick={() => setTimeRange(6)}
+            >
+              6h
+            </button>
+            <button
+              className={timeRange === 24 ? 'active' : ''}
+              onClick={() => setTimeRange(24)}
+            >
+              24h
+            </button>
+            <button
+              className={timeRange === 168 ? 'active' : ''}
+              onClick={() => setTimeRange(168)}
+            >
+              7d
+            </button>
+          </div>
         </div>
-
-        <form onSubmit={handleAddReading} className="add-reading">
-          <input
-            type="number"
-            step="0.1"
-            placeholder="Temperatur (°C)"
-            value={newTemp}
-            onChange={(e) => setNewTemp(e.target.value)}
-            required
-          />
-          <input
-            type="number"
-            step="0.1"
-            placeholder="Luftfeuchtigkeit (%)"
-            value={newHumidity}
-            onChange={(e) => setNewHumidity(e.target.value)}
-          />
-          <button type="submit">Hinzufügen</button>
-        </form>
       </div>
 
       <div className="chart-container">
@@ -269,7 +278,20 @@ function App() {
       </div>
 
       <footer className="footer">
-        <p>Messwerte: {stats?.count || 0} | Aktualisiert alle 30 Sekunden</p>
+        <div className="footer-content">
+          <div className="footer-item">
+            <span className="footer-icon">📈</span>
+            <span>{stats?.count || 0} Messwerte</span>
+          </div>
+          <div className="footer-item">
+            <span className="footer-icon">🔄</span>
+            <span>Auto-Refresh: 30s</span>
+          </div>
+          <div className="footer-item">
+            <span className="footer-icon">🖥️</span>
+            <span>Raspberry Pi Sensor</span>
+          </div>
+        </div>
       </footer>
     </div>
   )
