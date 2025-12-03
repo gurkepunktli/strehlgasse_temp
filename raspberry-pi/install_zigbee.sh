@@ -41,8 +41,8 @@ if ! command -v zigbee2mqtt &> /dev/null; then
         echo -e "${GREEN}Installiere Zigbee2MQTT...${NC}"
 
         # Node.js installieren
-        echo "Installiere Node.js..."
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        echo "Installiere Node.js 20 LTS..."
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
         sudo apt-get install -y nodejs
 
         # Zigbee2MQTT installieren
