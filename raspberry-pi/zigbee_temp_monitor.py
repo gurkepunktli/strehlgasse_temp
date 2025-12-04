@@ -54,7 +54,7 @@ SENSOR_DEVICE_NAME = "temperature_sensor"  # Passe dies an deinen GerÃ¤tenamen
 
 
 
-# Logging konfigurieren
+# Logging konfigurieren (nur zu stdout/systemd journal)
 
 logging.basicConfig(
 
@@ -64,9 +64,7 @@ logging.basicConfig(
 
     handlers=[
 
-        logging.FileHandler('/var/log/zigbee_temp_monitor.log'),
-
-        logging.StreamHandler()
+        logging.StreamHandler()  # Nur zu stdout (systemd journal)
 
     ]
 
