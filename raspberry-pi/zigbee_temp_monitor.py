@@ -262,9 +262,9 @@ def main():
 
 
 
-    # MQTT Client erstellen
+    # MQTT Client erstellen (CallbackAPIVersion für neuere paho-mqtt Versionen)
 
-    client = mqtt.Client(client_id="zigbee_temp_monitor")
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id="zigbee_temp_monitor")
 
 
 
