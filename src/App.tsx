@@ -208,9 +208,9 @@ function App() {
     )
   }
 
-  // Check if last reading is within 10 minutes
+  // Check if last reading is within 1 hour
   const isOnline = readings.length > 0 &&
-    (Date.now() - readings[readings.length - 1].timestamp) < 10 * 60 * 1000
+    (Date.now() - readings[readings.length - 1].timestamp) < 60 * 60 * 1000
 
   // Find min/max with timestamps
   const minReading = readings.reduce((min, r) =>
