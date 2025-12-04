@@ -103,19 +103,23 @@ def send_to_api(temperature, humidity=None):
             timeout=10
         )
 
-        if response.status_code in [200, 201]:
-            logger.info(f"Daten gesendet: {temperature} C" +
-                       (f", {humidity}%" if humidity is not None else ""))
+        if 200 <= response.status_code < 300:
+            logger.info(f"✓ Daten gesendet: {temperature}°C" +
+                       (f", {humidity}%" if humidity is not None else "") +
+                       f" (HTTP {response.status_code})")
             return True
         else:
             logger.error(f"API Fehler: {response.status_code} - {response.text}")
             return False
 
+    except requests.exceptions.Timeout:
+        logger.error(f"⏱️ Timeout: API antwortete nicht innerhalb von 10s")
+        return False
     except requests.exceptions.RequestException as e:
-        logger.error(f"Netzwerk-Fehler: {e}")
+        logger.error(f"🌐 Netzwerk-Fehler: {e}")
         return False
     except Exception as e:
-        logger.error(f"Fehler beim Senden: {e}")
+        logger.error(f"❌ Fehler beim Senden: {type(e).__name__}: {e}")
         return False
 
 

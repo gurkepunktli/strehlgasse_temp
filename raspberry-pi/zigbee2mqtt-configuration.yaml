@@ -1,0 +1,44 @@
+homeassistant:
+  enabled: false
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://localhost:1883
+serial:
+  port: /dev/ttyUSB0
+  adapter: ezsp
+frontend:
+  enabled: true
+  port: 8080
+advanced:
+  log_level: info
+  network_key:
+    - 183
+    - 166
+    - 235
+    - 74
+    - 142
+    - 180
+    - 222
+    - 62
+    - 152
+    - 239
+    - 169
+    - 248
+    - 175
+    - 143
+    - 251
+    - 185
+version: 4
+devices:
+  '0xc09b9efffec13476':
+    friendly_name: aussenzelt_temp
+    device_options:
+      reporting:
+        temperature:
+          minimum_report_interval: 60        # Minimum 60 Sekunden zwischen Reports
+          maximum_report_interval: 300       # Maximum 5 Minuten zwischen Reports
+          reportable_change: 10              # Sende bei 0.1°C Änderung (Wert * 0.01)
+        humidity:
+          minimum_report_interval: 60
+          maximum_report_interval: 300
+          reportable_change: 100             # Sende bei 1% Änderung (Wert * 0.01)
