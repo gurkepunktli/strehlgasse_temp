@@ -16,6 +16,10 @@ import time
 
 import requests
 
+from requests.adapters import HTTPAdapter
+
+from urllib3.util.retry import Retry
+
 import json
 
 import logging
@@ -78,6 +82,61 @@ logger = logging.getLogger(__name__)
 
 
 
+# HTTP Session mit Connection-Pooling und Retry-Logik
+
+def create_http_session():
+
+    """Erstellt eine HTTP Session mit sicheren Connection-Pool-Einstellungen"""
+
+    session = requests.Session()
+
+
+
+    # Retry-Strategie
+
+    retry = Retry(
+
+        total=3,
+
+        backoff_factor=0.3,
+
+        status_forcelist=[500, 502, 503, 504],
+
+        allowed_methods=["POST"]
+
+    )
+
+
+
+    adapter = HTTPAdapter(
+
+        max_retries=retry,
+
+        pool_connections=1,  # Nur 1 Connection im Pool
+
+        pool_maxsize=1,      # Maximal 1 Connection
+
+        pool_block=False     # Nicht blockieren wenn Pool voll
+
+    )
+
+
+
+    session.mount('http://', adapter)
+
+    session.mount('https://', adapter)
+
+
+
+    return session
+
+
+
+# Globale HTTP Session
+
+http_session = create_http_session()
+
+
 
 
 
@@ -96,7 +155,7 @@ def send_to_api(temperature, humidity=None):
         if humidity is not None:
             payload["humidity"] = round(humidity, 1)
 
-        response = requests.post(
+        response = http_session.post(
             API_URL,
             json=payload,
             headers={"Content-Type": "application/json"},
@@ -107,9 +166,11 @@ def send_to_api(temperature, humidity=None):
             logger.info(f"✓ Daten gesendet: {temperature}°C" +
                        (f", {humidity}%" if humidity is not None else "") +
                        f" (HTTP {response.status_code})")
+            response.close()  # Verbindung explizit schließen
             return True
         else:
             logger.error(f"API Fehler: {response.status_code} - {response.text}")
+            response.close()  # Verbindung explizit schließen
             return False
 
     except requests.exceptions.Timeout:
