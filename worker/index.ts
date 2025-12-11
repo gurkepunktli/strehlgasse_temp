@@ -9,10 +9,71 @@ interface TemperatureReading {
   timestamp?: number;
 }
 
+interface MetarReading {
+  station: string;
+  raw_text: string;
+  temperature: number | null;
+  dewpoint: number | null;
+  qnh_hpa: number | null;
+  wind_dir: number | null;
+  wind_speed_kt: number | null;
+  timestamp: number;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+const toNumberOrNull = (value: unknown): number | null => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const toHectopascal = (altimInHg: unknown): number | null => {
+  const value = Number(altimInHg);
+  if (!Number.isFinite(value)) return null;
+  return Math.round(value * 33.8639 * 10) / 10; // inHg to hPa
+};
+
+const fetchMetarData = async (station: string, hours: number): Promise<MetarReading[]> => {
+  const limitedHours = Math.min(Math.max(hours, 1), 168); // cap to 7 days
+  const url = `https://aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=json&stationString=${encodeURIComponent(station)}&hoursBeforeNow=${limitedHours}`;
+
+  const response = await fetch(url, {
+    headers: { 'Accept': 'application/json' },
+    cf: { cacheEverything: true, cacheTtl: 300 }
+  });
+
+  if (!response.ok) {
+    throw new Error(`METAR upstream error: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  const metars = payload?.data?.METAR || [];
+
+  return metars
+    .map((entry: any) => {
+      const timestamp = entry?.observation_time ? Date.parse(entry.observation_time) : null;
+
+      if (!timestamp || Number.isNaN(timestamp)) {
+        return null;
+      }
+
+      return {
+        station: entry.station_id || station,
+        raw_text: entry.raw_text || '',
+        temperature: toNumberOrNull(entry.temp_c),
+        dewpoint: toNumberOrNull(entry.dewpoint_c),
+        qnh_hpa: toHectopascal(entry.altim_in_hg),
+        wind_dir: toNumberOrNull(entry.wind_dir_degrees),
+        wind_speed_kt: toNumberOrNull(entry.wind_speed_kt),
+        timestamp,
+      } as MetarReading;
+    })
+    .filter((entry: MetarReading | null): entry is MetarReading => Boolean(entry))
+    .sort((a: MetarReading, b: MetarReading) => a.timestamp - b.timestamp);
 };
 
 export default {
@@ -127,6 +188,17 @@ export default {
         const result = await statsQuery.first();
 
         return new Response(JSON.stringify({ data: result }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // GET /api/metar - Fetch METAR data (default: LSZH)
+      if (url.pathname === '/api/metar' && request.method === 'GET') {
+        const station = (url.searchParams.get('station') || 'LSZH').toUpperCase();
+        const hours = parseInt(url.searchParams.get('hours') || '24');
+        const metarData = await fetchMetarData(station, hours || 24);
+
+        return new Response(JSON.stringify({ data: metarData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }

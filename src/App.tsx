@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -44,9 +44,21 @@ interface Stats {
   count: number
 }
 
+interface MetarReading {
+  station: string
+  raw_text: string
+  temperature: number | null
+  dewpoint: number | null
+  qnh_hpa: number | null
+  wind_dir: number | null
+  wind_speed_kt: number | null
+  timestamp: number
+}
+
 function App() {
   const [readings, setReadings] = useState<TemperatureReading[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
+  const [metarReadings, setMetarReadings] = useState<MetarReading[]>([])
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState(24)
   const [progress, setProgress] = useState(0)
@@ -67,16 +79,20 @@ function App() {
   const fetchData = async () => {
     try {
       const locationParam = 'location=strehlgasse'
-      const [readingsRes, statsRes] = await Promise.all([
+      const stationParam = 'station=LSZH'
+      const [readingsRes, statsRes, metarRes] = await Promise.all([
         fetch(`${API_URL}/api/temperature?hours=${timeRange}&limit=500&${locationParam}`),
-        fetch(`${API_URL}/api/temperature/stats?hours=${timeRange}&${locationParam}`)
+        fetch(`${API_URL}/api/temperature/stats?hours=${timeRange}&${locationParam}`),
+        fetch(`${API_URL}/api/metar?hours=${timeRange}&${stationParam}`)
       ])
 
       const readingsData: any = await readingsRes.json()
       const statsData: any = await statsRes.json()
+      const metarData: any = metarRes.ok ? await metarRes.json() : { data: [] }
 
       setReadings(readingsData.data.reverse())
       setStats(statsData.data)
+      setMetarReadings(Array.isArray(metarData?.data) ? metarData.data : [])
       setProgress(0)
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -102,6 +118,51 @@ function App() {
     return () => clearInterval(progressInterval)
   }, [])
 
+  const hasHumidity = readings.some(r => r.humidity !== null)
+
+  const metarSeries = useMemo<{
+    temperature: (number | null)[]
+    dewpoint: (number | null)[]
+    latest: MetarReading | null
+  }>(() => {
+    if (!metarReadings.length || !readings.length) {
+      return {
+        temperature: new Array(readings.length).fill(null),
+        dewpoint: new Array(readings.length).fill(null),
+        latest: null
+      }
+    }
+
+    const temperature = new Array(readings.length).fill(null) as (number | null)[]
+    const dewpoint = new Array(readings.length).fill(null) as (number | null)[]
+
+    metarReadings.forEach(metar => {
+      let closestIndex = -1
+      let minDiff = Infinity
+
+      readings.forEach((reading, index) => {
+        const diff = Math.abs(reading.timestamp - metar.timestamp)
+        if (diff < minDiff) {
+          minDiff = diff
+          closestIndex = index
+        }
+      })
+
+      if (closestIndex !== -1 && minDiff <= 45 * 60 * 1000) {
+        temperature[closestIndex] = metar.temperature ?? null
+        dewpoint[closestIndex] = metar.dewpoint ?? null
+      }
+    })
+
+    return {
+      temperature,
+      dewpoint,
+      latest: metarReadings[metarReadings.length - 1] || null
+    }
+  }, [metarReadings, readings])
+
+  const latestMetar = metarSeries.latest
+
   const chartData = {
     labels: readings.map(r => {
       const date = new Date(r.timestamp)
@@ -111,7 +172,7 @@ function App() {
     }),
     datasets: [
       {
-        label: 'Temperatur (°C)',
+        label: 'Temperatur (C)',
         data: readings.map(r => r.temperature),
         borderColor: darkMode ? 'rgb(244, 114, 182)' : 'rgb(239, 68, 68)',
         backgroundColor: darkMode ? 'rgba(244, 114, 182, 0.1)' : 'rgba(239, 68, 68, 0.1)',
@@ -127,6 +188,30 @@ function App() {
         fill: true,
         tension: 0.4,
         yAxisID: 'y1',
+      }] : []),
+      ...(metarReadings.length ? [{
+        label: 'LSZH METAR Temp (C)',
+        data: metarSeries.temperature,
+        borderColor: darkMode ? 'rgb(34, 211, 238)' : 'rgb(14, 165, 233)',
+        backgroundColor: darkMode ? 'rgba(34, 211, 238, 0.15)' : 'rgba(14, 165, 233, 0.15)',
+        borderDash: [6, 4],
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: true,
+        tension: 0.2,
+        yAxisID: 'y',
+      }] : []),
+      ...(metarReadings.length && metarSeries.dewpoint.some(value => value !== null) ? [{
+        label: 'LSZH METAR Taupunkt (C)',
+        data: metarSeries.dewpoint,
+        borderColor: darkMode ? 'rgb(148, 163, 184)' : 'rgb(107, 114, 128)',
+        backgroundColor: darkMode ? 'rgba(148, 163, 184, 0.2)' : 'rgba(107, 114, 128, 0.2)',
+        borderDash: [4, 4],
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        spanGaps: true,
+        tension: 0.2,
+        yAxisID: 'y',
       }] : [])
     ],
   }
@@ -179,11 +264,11 @@ function App() {
         grid: { color: gridColor },
         title: {
           display: true,
-          text: 'Temperatur (°C)',
+          text: 'Temperatur (C)',
           color: textColor
         }
       },
-      ...(readings.some(r => r.humidity !== null) ? {
+      ...(hasHumidity ? {
         y1: {
           type: 'linear' as const,
           display: true,
@@ -522,6 +607,26 @@ function App() {
 
         {/* Chart */}
         <div className={`backdrop-blur-lg rounded-2xl p-8 shadow-2xl border mb-8 ${cardBg}`}>
+          {latestMetar && (
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+              <div className={`text-xs sm:text-sm font-semibold ${textPrimary}`}>
+                LSZH METAR {format(new Date(latestMetar.timestamp), 'dd.MM.yyyy HH:mm')}
+              </div>
+              <div className={`text-xs sm:text-sm ${textSecondary}`}>
+                {[latestMetar.temperature !== null ? `Temp ${latestMetar.temperature} C` : null,
+                  latestMetar.dewpoint !== null ? `Tau ${latestMetar.dewpoint} C` : null,
+                  latestMetar.qnh_hpa !== null ? `QNH ${latestMetar.qnh_hpa} hPa` : null,
+                  latestMetar.wind_dir !== null && latestMetar.wind_speed_kt !== null
+                    ? `Wind ${latestMetar.wind_dir} deg / ${latestMetar.wind_speed_kt} kt`
+                    : null]
+                  .filter(Boolean)
+                  .join('  |  ')}
+              </div>
+              <div className={`w-full text-[11px] sm:text-xs font-mono ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {latestMetar.raw_text}
+              </div>
+            </div>
+          )}
           <div className="h-96 lg:h-[500px]">
             <Line data={chartData} options={chartOptions} />
           </div>
@@ -550,3 +655,4 @@ function App() {
 }
 
 export default App
+
