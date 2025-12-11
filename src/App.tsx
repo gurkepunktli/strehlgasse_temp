@@ -80,19 +80,32 @@ function App() {
     try {
       const locationParam = 'location=strehlgasse'
       const stationParam = 'station=LSZH'
+
+      const readingsPromise = fetch(`${API_URL}/api/temperature?hours=${timeRange}&limit=500&${locationParam}`)
+      const statsPromise = fetch(`${API_URL}/api/temperature/stats?hours=${timeRange}&${locationParam}`)
+      // METAR darf nicht den gesamten Fetch-Zyklus blockieren
+      const metarPromise = fetch(`${API_URL}/api/metar?hours=${timeRange}&${stationParam}`).catch(() => null)
+
       const [readingsRes, statsRes, metarRes] = await Promise.all([
-        fetch(`${API_URL}/api/temperature?hours=${timeRange}&limit=500&${locationParam}`),
-        fetch(`${API_URL}/api/temperature/stats?hours=${timeRange}&${locationParam}`),
-        fetch(`${API_URL}/api/metar?hours=${timeRange}&${stationParam}`)
+        readingsPromise,
+        statsPromise,
+        metarPromise
       ])
+
+      if (!readingsRes.ok) throw new Error(`Temperature API error ${readingsRes.status}`)
+      if (!statsRes.ok) throw new Error(`Stats API error ${statsRes.status}`)
 
       const readingsData: any = await readingsRes.json()
       const statsData: any = await statsRes.json()
-      const metarData: any = metarRes.ok ? await metarRes.json() : { data: [] }
+      const metarData: any = metarRes && metarRes.ok ? await metarRes.json() : { data: [] }
 
-      setReadings(readingsData.data.reverse())
-      setStats(statsData.data)
-      setMetarReadings(Array.isArray(metarData?.data) ? metarData.data : [])
+      const parsedReadings = Array.isArray(readingsData?.data) ? readingsData.data.slice().reverse() : []
+      const parsedStats = statsData?.data ?? null
+      const parsedMetar = Array.isArray(metarData?.data) ? metarData.data : []
+
+      setReadings(parsedReadings)
+      setStats(parsedStats)
+      setMetarReadings(parsedMetar)
       setProgress(0)
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -655,4 +668,3 @@ function App() {
 }
 
 export default App
-
