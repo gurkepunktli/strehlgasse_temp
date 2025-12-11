@@ -135,19 +135,30 @@ function App() {
 
   const metarSeries = useMemo<{
     temperature: (number | null)[]
-    dewpoint: (number | null)[]
+    humidity: (number | null)[]
     latest: MetarReading | null
   }>(() => {
     if (!metarReadings.length || !readings.length) {
       return {
         temperature: new Array(readings.length).fill(null),
-        dewpoint: new Array(readings.length).fill(null),
+        humidity: new Array(readings.length).fill(null),
         latest: null
       }
     }
 
     const temperature = new Array(readings.length).fill(null) as (number | null)[]
-    const dewpoint = new Array(readings.length).fill(null) as (number | null)[]
+    const humidity = new Array(readings.length).fill(null) as (number | null)[]
+
+    const calcRelativeHumidity = (tempC: number | null, dewC: number | null) => {
+      if (tempC === null || dewC === null) return null
+      const a = 17.625
+      const b = 243.04
+      const alpha = (a * dewC) / (b + dewC)
+      const beta = (a * tempC) / (b + tempC)
+      const rh = 100 * Math.exp(alpha - beta)
+      if (!Number.isFinite(rh)) return null
+      return Math.min(100, Math.max(0, Math.round(rh * 10) / 10))
+    }
 
     metarReadings.forEach(metar => {
       let closestIndex = -1
@@ -163,13 +174,13 @@ function App() {
 
       if (closestIndex !== -1 && minDiff <= 45 * 60 * 1000) {
         temperature[closestIndex] = metar.temperature ?? null
-        dewpoint[closestIndex] = metar.dewpoint ?? null
+        humidity[closestIndex] = calcRelativeHumidity(metar.temperature ?? null, metar.dewpoint ?? null)
       }
     })
 
     return {
       temperature,
-      dewpoint,
+      humidity,
       latest: metarReadings[metarReadings.length - 1] || null
     }
   }, [metarReadings, readings])
@@ -203,7 +214,7 @@ function App() {
         yAxisID: 'y1',
       }] : []),
       ...(metarReadings.length ? [{
-        label: 'LSZH METAR Temp (C)',
+        label: 'LSZH Temp (C)',
         data: metarSeries.temperature,
         borderColor: 'rgb(234, 179, 8)',
         backgroundColor: 'rgba(234, 179, 8, 0.15)',
@@ -214,17 +225,17 @@ function App() {
         tension: 0.2,
         yAxisID: 'y',
       }] : []),
-      ...(metarReadings.length && metarSeries.dewpoint.some(value => value !== null) ? [{
-        label: 'LSZH METAR Taupunkt (C)',
-        data: metarSeries.dewpoint,
-        borderColor: darkMode ? 'rgb(148, 163, 184)' : 'rgb(107, 114, 128)',
-        backgroundColor: darkMode ? 'rgba(148, 163, 184, 0.2)' : 'rgba(107, 114, 128, 0.2)',
+      ...(metarReadings.length && metarSeries.humidity.some(value => value !== null) ? [{
+        label: 'LSZH Lf. (%)',
+        data: metarSeries.humidity,
+        borderColor: darkMode ? 'rgb(16, 185, 129)' : 'rgb(16, 185, 129)',
+        backgroundColor: darkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.2)',
         borderDash: [4, 4],
         pointRadius: 3,
         pointHoverRadius: 5,
         spanGaps: true,
         tension: 0.2,
-        yAxisID: 'y',
+        yAxisID: 'y1',
       }] : [])
     ],
   }
@@ -627,7 +638,18 @@ function App() {
               </div>
               <div className={`text-xs sm:text-sm ${textSecondary}`}>
                 {[latestMetar.temperature !== null ? `Temp ${latestMetar.temperature} C` : null,
-                  latestMetar.dewpoint !== null ? `Tau ${latestMetar.dewpoint} C` : null,
+                  (() => {
+                    if (latestMetar.temperature !== null && latestMetar.dewpoint !== null) {
+                      const a = 17.625
+                      const b = 243.04
+                      const alpha = (a * latestMetar.dewpoint) / (b + latestMetar.dewpoint)
+                      const beta = (a * latestMetar.temperature) / (b + latestMetar.temperature)
+                      const rh = 100 * Math.exp(alpha - beta)
+                      const rounded = Math.min(100, Math.max(0, Math.round(rh * 10) / 10))
+                      return Number.isFinite(rounded) ? `Feuchte ${rounded}%` : null
+                    }
+                    return null
+                  })(),
                   latestMetar.qnh_hpa !== null ? `QNH ${latestMetar.qnh_hpa} hPa` : null,
                   latestMetar.wind_dir !== null && latestMetar.wind_speed_kt !== null
                     ? `Wind ${latestMetar.wind_dir} deg / ${latestMetar.wind_speed_kt} kt`
