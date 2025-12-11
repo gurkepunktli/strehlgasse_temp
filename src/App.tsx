@@ -192,8 +192,8 @@ function App() {
       ...(metarReadings.length ? [{
         label: 'LSZH METAR Temp (C)',
         data: metarSeries.temperature,
-        borderColor: darkMode ? 'rgb(34, 211, 238)' : 'rgb(14, 165, 233)',
-        backgroundColor: darkMode ? 'rgba(34, 211, 238, 0.15)' : 'rgba(14, 165, 233, 0.15)',
+        borderColor: 'rgb(234, 179, 8)',
+        backgroundColor: 'rgba(234, 179, 8, 0.15)',
         borderDash: [6, 4],
         pointRadius: 4,
         pointHoverRadius: 6,

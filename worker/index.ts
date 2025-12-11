@@ -31,15 +31,9 @@ const toNumberOrNull = (value: unknown): number | null => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const toHectopascal = (altimInHg: unknown): number | null => {
-  const value = Number(altimInHg);
-  if (!Number.isFinite(value)) return null;
-  return Math.round(value * 33.8639 * 10) / 10; // inHg to hPa
-};
-
 const fetchMetarData = async (station: string, hours: number): Promise<MetarReading[]> => {
   const limitedHours = Math.min(Math.max(hours, 1), 168); // cap to 7 days
-  const url = `https://aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=json&stationString=${encodeURIComponent(station)}&hoursBeforeNow=${limitedHours}`;
+  const url = `https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(station)}&format=json&taf=false&hours=${limitedHours}`;
 
   const response = await fetch(url, {
     headers: { 'Accept': 'application/json' },
@@ -50,25 +44,28 @@ const fetchMetarData = async (station: string, hours: number): Promise<MetarRead
     throw new Error(`METAR upstream error: ${response.status}`);
   }
 
-  const payload = await response.json();
-  const metars = payload?.data?.METAR || [];
+  const metars = await response.json();
+
+  if (!Array.isArray(metars)) {
+    return [];
+  }
 
   return metars
     .map((entry: any) => {
-      const timestamp = entry?.observation_time ? Date.parse(entry.observation_time) : null;
+      const timestamp = entry?.reportTime ? Date.parse(entry.reportTime) : null;
 
       if (!timestamp || Number.isNaN(timestamp)) {
         return null;
       }
 
       return {
-        station: entry.station_id || station,
-        raw_text: entry.raw_text || '',
-        temperature: toNumberOrNull(entry.temp_c),
-        dewpoint: toNumberOrNull(entry.dewpoint_c),
-        qnh_hpa: toHectopascal(entry.altim_in_hg),
-        wind_dir: toNumberOrNull(entry.wind_dir_degrees),
-        wind_speed_kt: toNumberOrNull(entry.wind_speed_kt),
+        station: entry.icaoId || station,
+        raw_text: entry.rawOb || '',
+        temperature: toNumberOrNull(entry.temp),
+        dewpoint: toNumberOrNull(entry.dewp),
+        qnh_hpa: toNumberOrNull(entry.altim),
+        wind_dir: entry.wdir === 'VRB' ? null : toNumberOrNull(entry.wdir),
+        wind_speed_kt: toNumberOrNull(entry.wspd),
         timestamp,
       } as MetarReading;
     })
